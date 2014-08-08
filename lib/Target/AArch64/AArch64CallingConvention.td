@@ -195,6 +195,26 @@ def RetCC_AArch64_WebKit_JS : CallingConv<[
                                           [Q0, Q1, Q2, Q3, Q4, Q5, Q6, Q7]>>
 ]>;
 
+//===----------------------------------------------------------------------===//
+// ARM64 Calling Convention for GHC
+//===----------------------------------------------------------------------===//
+
+def CC_AArch64_GHC : CallingConv<[
+  // Handle all vector types as either f64 or v2f64.
+  CCIfType<[v1i64, v2i32, v4i16, v8i8, v2f32], CCBitConvertToType<f64>>,
+  CCIfType<[v2i64, v4i32, v8i16, v16i8, v4f32, f128], CCBitConvertToType<v2f64>>,
+
+  CCIfType<[v2f64], CCAssignToReg<[Q4, Q5]>>,
+  CCIfType<[f32], CCAssignToReg<[S8, S9, S10, S11]>>,
+  CCIfType<[f64], CCAssignToReg<[D12, D13, D14, D15]>>,
+
+  // Promote i8/i16/i32 arguments to i64.
+  CCIfType<[i8, i16, i32], CCPromoteToType<i64>>,
+
+  // Pass in STG registers: Base, Sp, Hp, R1, R2, R3, R4, R5, R6, SpLim
+  CCIfType<[i64], CCAssignToReg<[X19, X20, X21, X22, X23, X24, X25, X26, X27, X28]>>
+]>;
+
 // FIXME: LR is only callee-saved in the sense that *we* preserve it and are
 // presumably a callee to someone. External functions may not do so, but this
 // is currently safe since BL has LR as an implicit-def and what happens after a
@@ -240,3 +260,4 @@ def CSR_AArch64_AllRegs
                            (sequence "S%u", 0, 31), (sequence "D%u", 0, 31),
                            (sequence "Q%u", 0, 31))>;
 
+def CSR_AArch64_NoRegs : CalleeSavedRegs<(add)>;
